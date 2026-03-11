@@ -1,28 +1,44 @@
+@Library("shared") _
 pipeline {
-    agent any
-    stages{
-        stage("Clone Code"){
-            steps{
-                git url: "https://github.com/LondheShubham153/django-notes-app.git", branch: "main"
-            }
-        }
-        stage("Build and Test"){
-            steps{
-                sh "docker build . -t note-app-test-new"
-            }
-        }
-        stage("Push to Docker Hub"){
-            steps{
-                withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
-                sh "docker tag note-app-test-new ${env.dockerHubUser}/note-app-test-new:latest"
-                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker push ${env.dockerHubUser}/note-app-test-new:latest"
+    agent { label "shetty" }
+    stages {
+        stage("Hello") {
+            steps {
+                script {
+                    hello()
                 }
             }
         }
-        stage("Deploy"){
-            steps{
-                sh "docker-compose down && docker-compose up -d"
+        stage("code") {
+            steps {
+                echo "this is cloning the code"
+                git url: "https://github.com/akshayshetty709/django-notes-app.git", branch:"dev"
+                echo "code cloned successfully"
+            }
+        }
+        stage("Build") {
+            steps {
+                echo "this is building the code"
+                sh "docker build -t notes-app:latest ."
+            }
+        }
+        stage("Push") {
+            steps {
+                echo "this is pushing the image to dockerhub"
+                withCredentials([usernamePassword(
+                    'credentialsId':"Dockerhubcred",
+                    passwordVariable:"DockerhubPass",
+                    usernameVariable:"DockerhubUser")]){
+                sh "docker login -u ${env.DockerhubUser} -p ${env.DockerhubPass}"
+                sh "docker image tag notes-app:latest ${env.DockerhubUser}/notes-app:latest"
+                sh "docker push ${env.DockerhubUser}/notes-app:latest "
+                    }
+            }
+        }
+        stage("Deploy") {
+            steps {
+                echo "this is Deploying the code"
+                sh "docker compose up -d"
             }
         }
     }
